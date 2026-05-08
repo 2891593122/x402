@@ -45,6 +45,8 @@ This page tracks which features are implemented in each SDK (TypeScript, Go, Pyt
 | exact/aptos (Fungible Assets) | ✅ | ❌ | ❌ |
 | exact/hedera (HBAR + HTS) | ✅ | ❌ | ❌ |
 | upto/evm (Permit2) | ✅ | ✅ | ✅ |
+| batch-settlement/evm (EIP-3009) | ✅ | ✅ | ❌ |
+| batch-settlement/evm (Permit2) | ✅ | ✅ | ❌ |
 
 ## Extensions
 
