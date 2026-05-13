@@ -68,6 +68,7 @@
           "schemes/overview",
           "schemes/exact",
           "schemes/upto",
+          "schemes/auth-capture",
           "schemes/batch-settlement"
         ]
       },
