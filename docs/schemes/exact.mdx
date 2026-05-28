@@ -199,6 +199,63 @@ Use `exact` when the final charge is known before the response is generated, suc
   </Tab>
 </Tabs>
 
+### SVM Smart Wallet Verification
+
+By default, `ExactSvmScheme` only accepts transactions from standard wallets (keypair signers). To accept payments from smart wallets — such as Squads multisigs, Swig, or SPL Governance — enable simulation-based verification when constructing the scheme:
+
+```typescript
+import { ExactSvmScheme } from "@x402/svm/exact/server";
+import { toFacilitatorSvmSigner } from "@x402/svm";
+
+const signer = toFacilitatorSvmSigner(keypair);
+
+const svmScheme = new ExactSvmScheme(signer, undefined, {
+  enableSmartWalletVerification: true,
+});
+```
+
+When enabled, transactions rejected by the standard static validation path (due to unknown programs or unexpected instruction counts) are re-verified by simulating the transaction and inspecting the CPI inner instruction trace. This works for any smart wallet program that executes a `TransferChecked` via CPI.
+
+**How it works:**
+
+- **Path 1 (static):** Fast positional instruction validation for standard wallets. Unchanged from the default behavior.
+- **Path 2 (simulation):** Outcome-based verification for smart wallets. Runs only when Path 1 rejects a transaction for a layout reason (not a semantic mismatch like wrong amount or recipient). Simulates the transaction and confirms a valid `TransferChecked` CPI was executed.
+
+Post-settlement verification is performed automatically for smart wallet transactions to defend against TOCTOU attacks — confirming the transfer actually executed on-chain after the transaction confirms.
+
+**Configuration options:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enableSmartWalletVerification` | `boolean` | `false` | Enable simulation-based smart wallet verification. |
+| `smartWalletMaxComputeUnits` | `number` | `400000` | Maximum compute units allowed for smart wallet transactions. |
+| `smartWalletMaxPriorityFeeMicroLamports` | `number` | `50000` | Maximum priority fee in microlamports for smart wallet transactions. |
+| `smartWalletAllowedPrograms` | `string[]` | Squads v4, Squads Smart Account, Swig, SPL Governance, Metaplex Core | Allowlist of smart wallet program addresses permitted to use Path 2 verification. |
+
+**Supported smart wallet programs (default allowlist):**
+
+- `SQDS4ep65T869zMMBKyuUq6aD6EgTu8psMjkvj52pCf` — Squads Multisig v4
+- `SMRTzfY6DfH5ik3TKiyLFfXexV8uSG3d2UksSCYdunG` — Squads Smart Account
+- `SWiGmQedKzMz1tiTqoJCWeGDnGXfNBp2PkXLkpCAtQo` — Swig
+- `GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw` — SPL Governance
+- `CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d` — Metaplex Core
+
+To override the allowlist with your own set of programs:
+
+```typescript
+const svmScheme = new ExactSvmScheme(signer, undefined, {
+  enableSmartWalletVerification: true,
+  smartWalletAllowedPrograms: [
+    "SQDS4ep65T869zMMBKyuUq6aD6EgTu8psMjkvj52pCf", // Squads Multisig v4
+    "YourCustomProgramAddress",
+  ],
+});
+```
+
+<Note>
+  `enableSmartWalletVerification` requires the signer to implement `simulateTransactionWithInnerInstructions`, `getConfirmedTransactionInnerInstructions`, `getTokenAccountBalance`, and `fetchAddressLookupTables`. The `toFacilitatorSvmSigner()` factory provides all required methods automatically.
+</Note>
+
 ### Network Implementations
 
 The `exact` scheme has network specifications for EVM, SVM, AVM, Stellar, Aptos, Hedera, TON, Cardano, Keeta, and Sui.
