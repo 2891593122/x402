@@ -1,0 +1,85 @@
+---
+title: "Auth-capture"
+description: "Refundable x402 payments with two-phase escrow or single-shot charge-and-refund flows."
+---
+
+The `auth-capture` scheme adds refundable payments to x402. The client authorizes a maximum amount, and the facilitator submits it — either locking funds in escrow for later settlement (two-phase) or sending them directly to the receiver with refund capability (single-shot).
+
+Use `auth-capture` when you need buyer protection, delayed delivery, or the ability to void or refund a payment after the resource is delivered.
+
+### Settlement paths
+
+The scheme supports two settlement paths, selected via `extra.autoCapture`:
+
+| `autoCapture` | Behavior |
+|:---|:---|
+| `false` (default) | **Two-phase.** Funds held in escrow. The `captureAuthorizer` can capture, void, or refund. The client can reclaim funds if the capture deadline passes without action. |
+| `true` | **Single-shot.** Funds sent directly to the receiver. The `captureAuthorizer` can refund within the refund window. |
+
+### Relationship to `exact`
+
+| Aspect | `exact` | `auth-capture` |
+|:---|:---|:---|
+| Settlement | Immediate transfer | Via escrow (two-phase) or direct with refund capability (single-shot) |
+| Refundable | No | Yes (both paths) |
+| Fee system | None | Configurable (min/max bounds, client-signed) |
+
+### Client setup (TypeScript)
+
+The TypeScript SDK ships a client-only implementation for EVM networks. Server and facilitator support are in development.
+
+```typescript
+import { x402Client } from "@x402/core/client";
+import { AuthCaptureEvmScheme } from "@x402/evm/auth-capture/client";
+import { privateKeyToAccount } from "viem/accounts";
+
+const account = privateKeyToAccount(process.env.EVM_PRIVATE_KEY as `0x${string}`);
+
+const client = new x402Client();
+client.register("eip155:*", new AuthCaptureEvmScheme(account));
+```
+
+The client reads the following fields from `requirements.extra`:
+
+| Field | Type | Description |
+|---|---|---|
+| `captureAuthorizer` | `address` | Committed on-chain as `PaymentInfo.operator`. |
+| `feeRecipient` | `address` | Address that receives the fee portion. |
+| `captureDeadline` | `uint48` | Absolute Unix seconds; capture must occur before this. |
+| `refundDeadline` | `uint48` | Absolute Unix seconds; refunds allowed until this. |
+| `minFeeBps` | `uint16` | Floor on the `captureAuthorizer`'s fee. `0` = no minimum. |
+| `maxFeeBps` | `uint16` | Cap on the `captureAuthorizer`'s fee. |
+| `name` | `string` | EIP-712 token-domain name (e.g. `"USDC"`). |
+| `version` | `string` | EIP-712 token-domain version (e.g. `"2"`). |
+
+Optional:
+
+| Field | Default | Description |
+|---|---|---|
+| `assetTransferMethod` | `"eip3009"` | `"eip3009"` (ERC-3009) or `"permit2"` (Uniswap Permit2). |
+
+### Supported networks (TypeScript client)
+
+| Network | CAIP-2 ID |
+|---|---|
+| Base Mainnet | `eip155:8453` |
+| Base Sepolia | `eip155:84532` |
+
+<Note>
+Server and facilitator implementations are not yet available in the SDK. The current release ships the client only: detecting auth-capture payment requirements and signing the payment payload.
+</Note>
+
+### Examples
+
+- [TypeScript client example](https://github.com/x402-foundation/x402/tree/main/examples/typescript/clients/auth-capture)
+
+### Specs
+
+- [`auth-capture` spec](https://github.com/x402-foundation/x402/blob/main/specs/schemes/auth-capture/scheme_auth_capture.md)
+- [`auth-capture` EVM spec](https://github.com/x402-foundation/x402/blob/main/specs/schemes/auth-capture/scheme_auth_capture_evm.md)
+
+### See also
+
+- [Payment schemes overview](/schemes/overview)
+- [Exact](/schemes/exact)
+- [Upto](/schemes/upto)
