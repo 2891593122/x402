@@ -214,6 +214,27 @@ The EVM implementation supports two transfer methods:
 
 Permit2 may require a one-time approval. The gas sponsoring extensions can let the facilitator handle that approval path for compatible tokens.
 
+### EVM Smart Wallet Support (ERC-6492)
+
+Facilitators can optionally support payments from undeployed ERC-4337 smart wallets (counterfactual wallets) using ERC-6492 factory call injection. This is controlled by the `eip6492AllowedFactories` configuration option on the EVM exact facilitator scheme.
+
+<Warning>
+**Breaking change for facilitator implementers (v2.14.0):** The `deployERC4337WithEIP6492` boolean has been removed. Replace it with `eip6492AllowedFactories`, an explicit allowlist of factory addresses you trust. An empty or omitted list disables smart wallet deployment entirely and rejects factory deployment calls with `eip6492_factory_not_allowed`.
+
+```typescript
+// Before (v2.13.x and earlier)
+new ExactEvmFacilitatorScheme({ deployERC4337WithEIP6492: true })
+
+// After (v2.14.0+)
+new ExactEvmFacilitatorScheme({
+  eip6492AllowedFactories: [
+    "0xYourTrustedFactoryAddress1",
+    "0xYourTrustedFactoryAddress2",
+  ],
+})
+```
+</Warning>
+
 ### Examples
 
 * [TypeScript server example](https://github.com/x402-foundation/x402/tree/main/examples/typescript/servers/express)
