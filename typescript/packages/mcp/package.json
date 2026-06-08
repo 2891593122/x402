@@ -60,5 +60,9 @@
   },
   "files": [
     "dist"
-  ]
+  ],
+  "homepage": "https://github.com/x402-foundation/x402#readme",
+  "bugs": {
+    "url": "https://github.com/x402-foundation/x402/issues"
+  }
 }
